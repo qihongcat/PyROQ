@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyROQ",
-    version="0.1.24",
+    version="0.1.25",
     author="Hong Qi",
     author_email="hong.qi@ligo.org",
     description="PyROQ is a Python-based code that can generate reduced basis and reduced order quadrature data of gravitational wave waveforms.",
