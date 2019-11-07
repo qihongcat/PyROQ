@@ -278,7 +278,7 @@ def initial_basis(mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s
 
 def empnodes(ndim, known_bases): # Here known_bases is the full copy known_bases_copy. Its length is equal to or longer than ndim.
     emp_nodes = numpy.arange(0,ndim)*100000000
-    emp_nodes[0] = numpy.argmax(known_bases[0])
+    emp_nodes[0] = numpy.argmax(numpy.absolute(known_bases[0]))
     c1 = known_bases[1,emp_nodes[0]]/known_bases[0,1]
     interp1 = numpy.multiply(c1,known_bases[0])
     diff1 = interp1 - known_bases[1]
