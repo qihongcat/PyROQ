@@ -287,7 +287,7 @@ def empnodes(ndim, known_bases): # Here known_bases is the full copy known_bases
     for k in numpy.arange(2,ndim):
         emp_tmp = emp_nodes[0:k]
         Vtmp = numpy.transpose(known_bases[0:k,emp_tmp])
-        inverse_Vtmp = numpy.linalg.inv(Vtmp)
+        inverse_Vtmp = numpy.linalg.pinv(Vtmp)
         e_to_interp = known_bases[k]
         Ci = numpy.dot(inverse_Vtmp, e_to_interp[emp_tmp])
         interpolantA = numpy.zeros(len(known_bases[k]))+numpy.zeros(len(known_bases[k]))*1j
@@ -305,7 +305,7 @@ def empnodes(ndim, known_bases): # Here known_bases is the full copy known_bases
     ndim = len(emp_nodes)
     #print(len(emp_nodes), "\n", emp_nodes)
     V = numpy.transpose(known_bases[0:ndim, emp_nodes])
-    inverse_V = numpy.linalg.inv(V)
+    inverse_V = numpy.linalg.pinv(V)
     return numpy.array([ndim, inverse_V, emp_nodes])
 
 def surroerror(ndim, inverse_V, emp_nodes, known_bases, test_mc, test_q, test_s1, test_s2, test_ecc, test_lambda1, test_lambda2, test_iota, test_phiref, distance, deltaF, f_min, f_max, waveFlags, approximant):
@@ -353,7 +353,7 @@ def roqs(tolerance, freq,  ndimlow, ndimhigh, ndimstepsize, known_bases_copy, nt
             f_linear = freq[emp_nodes]
             numpy.save('./B_linear.npy',numpy.transpose(b_linear))
             numpy.save('./fnodes_linear.npy',f_linear)
-            print("Number of linear basis elements is ", ndim, "and the linear ROQ data save in B_linear.npy")
+            print("Number of linear basis elements is ", ndim, "and the linear ROQ data are saved in B_linear.npy")
             break
     return
 
@@ -367,14 +367,14 @@ def testrep(b_linear, emp_nodes, test_mc, test_q, test_s1, test_s2, test_ecc, te
     plt.plot(numpy.imag(rep_error), label='Imaginary part of h+')
     plt.xlabel('Waveform Node Number')
     plt.ylabel('Fractional Representation Error')
-    plt.title('Rep Error with numpy.linalg.inv()')
+    plt.title('Rep Error with numpy.linalg.pinv()')
     plt.legend(loc=0)
     plt.show()
     return
 
 def empnodes_quad(ndim_quad, known_quad_bases):
     emp_nodes_quad = numpy.arange(0,ndim_quad)*100000000
-    emp_nodes_quad[0] = numpy.argmax(known_quad_bases[0])
+    emp_nodes_quad[0] = numpy.argmax(numpy.absolute(known_quad_bases[0]))
     c1_quad = known_quad_bases[1,emp_nodes_quad[0]]/known_quad_bases[0,1]
     interp1_quad = numpy.multiply(c1_quad,known_quad_bases[0])
     diff1_quad = interp1_quad - known_quad_bases[1]
@@ -383,7 +383,7 @@ def empnodes_quad(ndim_quad, known_quad_bases):
     for k in numpy.arange(2,ndim_quad):
         emp_tmp_quad = emp_nodes_quad[0:k]
         Vtmp_quad = numpy.transpose(known_quad_bases[0:k,emp_tmp_quad])
-        inverse_Vtmp_quad = numpy.linalg.inv(Vtmp_quad)
+        inverse_Vtmp_quad = numpy.linalg.pinv(Vtmp_quad)
         e_to_interp_quad = known_quad_bases[k]
         Ci_quad = numpy.dot(inverse_Vtmp_quad, e_to_interp_quad[emp_tmp_quad])
         interpolantA_quad = numpy.zeros(len(known_quad_bases[k]))+numpy.zeros(len(known_quad_bases[k]))*1j
@@ -401,7 +401,7 @@ def empnodes_quad(ndim_quad, known_quad_bases):
     ndim_quad = len(emp_nodes_quad)
     #print(len(emp_nodes_quad), "\n", emp_nodes_quad)
     V_quad = numpy.transpose(known_quad_bases[0:ndim_quad,emp_nodes_quad])
-    inverse_V_quad = numpy.linalg.inv(V_quad)
+    inverse_V_quad = numpy.linalg.pinv(V_quad)
     return numpy.array([ndim_quad, inverse_V_quad, emp_nodes_quad])
 
 def surroerror_quad(ndim_quad, inverse_V_quad, emp_nodes_quad, known_quad_bases, test_mc_quad, test_q_quad, test_s1_quad, test_s2_quad, test_ecc_quad, test_lambda1_quad, test_lambda2_quad, test_iota_quad, test_phiref_quad, distance, deltaF, f_min, f_max, waveFlags, approximant):
@@ -462,7 +462,7 @@ def testrep_quad(b_quad, emp_nodes_quad, test_mc_quad, test_q_quad, test_s1_quad
     plt.plot(numpy.real(rep_error_quad))
     plt.xlabel('Waveform Node Number')
     plt.ylabel('Fractional Representation Error for Quadratic')
-    plt.title('Rep Error with numpy.linalg.inv()')
+    plt.title('Rep Error with numpy.linalg.pinv()')
     plt.show()
     return
 
