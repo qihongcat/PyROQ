@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: PyROQ
+Version: 0.1.22
+Summary: PyROQ is a Python-based code that can generate reduced basis and reduced order quadrature data of gravitational wave waveforms.
+Home-page: https://github.com/qihongcat/PyROQ
+Author: Hong Qi
+Author-email: hong.qi@ligo.org
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3.6
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown

@@ -1,0 +1,8 @@
+README.md
+setup.py
+PyROQ/__init__.py
+PyROQ/pyroq.py
+PyROQ.egg-info/PKG-INFO
+PyROQ.egg-info/SOURCES.txt
+PyROQ.egg-info/dependency_links.txt
+PyROQ.egg-info/top_level.txt

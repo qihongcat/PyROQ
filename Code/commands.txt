@@ -1,0 +1,5 @@
+rm -rf dist PyROQ.egg-info build
+python3.6 setup.py sdist 
+python3.6 setup.py bdist_wheel
+python3 -m twine upload dist/*
+
