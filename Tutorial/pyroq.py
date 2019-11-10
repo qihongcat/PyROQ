@@ -10,6 +10,15 @@ from lal.lal import PC_SI as LAL_PC_SI
 import h5py
 import warnings
 import random
+import multiprocessing as mp
+
+def howmany_within_range(row, minimum, maximum):
+    """Returns how many numbers lie within `maximum` and `minimum` in a given `row`"""
+    count = 0
+    for n in row:
+        if minimum <= n <= maximum:
+            count = count + 1
+    return count
 
 # Calculating the projection of complex vector v on complex vector u
 def proj(u, v):
@@ -69,42 +78,86 @@ def generate_params_points(npts, nparams, params_low, params_high):
     paramspoints = paramspoints.round(decimals=6)
     return paramspoints
 
+def compute_modulus(paramspoint, known_bases, distance, deltaF, f_min, f_max, approximant):
+    waveFlags = lal.CreateDict()
+    m1, m2 = get_m1m2_from_mcq(paramspoint[0],paramspoint[1])
+    s1x, s1y, s1z = spherical_to_cartesian(paramspoint[2:5]) 
+    s2x, s2y, s2z = spherical_to_cartesian(paramspoint[5:8]) 
+    iota = paramspoint[8]  
+    phiRef = paramspoint[9]
+    ecc = 0
+    if len(paramspoint)==11:
+        ecc = paramspoint[10]
+    if len(paramspoint)==12:
+        lambda1 = paramspoint[10]
+        lambda2 = paramspoint[11]
+        lalsimulation.SimInspiralWaveformParamsInsertTidalLambda1(waveFlags, lambda1)
+        lalsimulation.SimInspiralWaveformParamsInsertTidalLambda2(waveFlags, lambda2) 
+    f_ref = 0 
+    RA=0    
+    DEC=0   
+    psi=0   
+    phi=0   
+    m1 *= lal.lal.MSUN_SI
+    m2 *= lal.lal.MSUN_SI
+    [plus,cross]=lalsimulation.SimInspiralChooseFDWaveform(m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, distance, iota, phiRef, 0, ecc, 0, deltaF, f_min, f_max, f_ref, waveFlags, approximant)
+    hp_tmp = plus.data.data[numpy.int(f_min/deltaF):numpy.int(f_max/deltaF)] # data_tmp is hplus and is a complex vector 
+    residual = hp_tmp
+    for k in numpy.arange(0,len(known_bases)):
+        residual -= proj(known_bases[k],hp_tmp)
+    modulus = numpy.sqrt(numpy.vdot(residual, residual))
+    return modulus
+
+def compute_modulus_quad(paramspoint, known_quad_bases, distance, deltaF, f_min, f_max, approximant):
+    waveFlags = lal.CreateDict()
+    m1, m2 = get_m1m2_from_mcq(paramspoint[0],paramspoint[1])
+    s1x, s1y, s1z = spherical_to_cartesian(paramspoint[2:5]) 
+    s2x, s2y, s2z = spherical_to_cartesian(paramspoint[5:8]) 
+    iota=paramspoint[8]  
+    phiRef=paramspoint[9]
+    ecc = 0
+    if len(paramspoint)==11:
+        ecc = paramspoint[10]
+    if len(paramspoint)==12:
+        lambda1 = paramspoint[10]
+        lambda2 = paramspoint[11]
+        lalsimulation.SimInspiralWaveformParamsInsertTidalLambda1(waveFlags, lambda1)
+        lalsimulation.SimInspiralWaveformParamsInsertTidalLambda2(waveFlags, lambda2) 
+    f_ref = 0 
+    RA=0    
+    DEC=0   
+    psi=0   
+    phi=0   
+    m1 *= lal.lal.MSUN_SI
+    m2 *= lal.lal.MSUN_SI
+    [plus,cross]=lalsimulation.SimInspiralChooseFDWaveform(m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, distance, iota, phiRef, 0, ecc, 0, deltaF, f_min, f_max, f_ref, waveFlags, approximant)
+    hp_tmp = plus.data.data[numpy.int(f_min/deltaF):numpy.int(f_max/deltaF)] # data_tmp is hplus and is a complex vector 
+    hp_quad_tmp = (numpy.absolute(hp_tmp))**2
+    residual = hp_quad_tmp
+    for k in numpy.arange(0,len(known_quad_bases)):
+        residual -= proj(known_quad_bases[k],hp_quad_tmp)
+    modulus = numpy.sqrt(numpy.vdot(residual, residual))
+    return modulus
+
 # now generating N=npts waveforms at points that are 
 # randomly uniformly distributed in parameter space
 # and calculate their inner products with the 1st waveform
 # so as to find the best waveform as the new basis
-def least_match_waveform_unnormalized(paramspoints, known_bases, npts, distance, deltaF, f_min, f_max, waveFlags, approximant):
-    overlaps = numpy.zeros(npts)
-    modula = numpy.zeros(npts)
-    for i in numpy.arange(0,len(paramspoints)):
-        paramspoint = paramspoints[i]
-        m1, m2 = get_m1m2_from_mcq(paramspoint[0],paramspoint[1])
-        s1x, s1y, s1z = spherical_to_cartesian(paramspoint[2:5]) 
-        s2x, s2y, s2z = spherical_to_cartesian(paramspoint[5:8]) 
-        iota = paramspoint[8]  
-        phiRef = paramspoint[9]
-        ecc = 0
-        if len(paramspoint)==11:
-            ecc = paramspoint[10]
-        if len(paramspoint)==12:
-            lambda1 = paramspoint[10]
-            lambda2 = paramspoint[11]
-            lalsimulation.SimInspiralWaveformParamsInsertTidalLambda1(waveFlags, lambda1)
-            lalsimulation.SimInspiralWaveformParamsInsertTidalLambda2(waveFlags, lambda2) 
-        f_ref = 0 
-        RA=0    
-        DEC=0   
-        psi=0   
-        phi=0   
-        m1 *= lal.lal.MSUN_SI
-        m2 *= lal.lal.MSUN_SI
-        [plus,cross]=lalsimulation.SimInspiralChooseFDWaveform(m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, distance, iota, phiRef, 0, ecc, 0, deltaF, f_min, f_max, f_ref, waveFlags, approximant)
-        hp_tmp = plus.data.data[numpy.int(f_min/deltaF):numpy.int(f_max/deltaF)] # data_tmp is hplus and is a complex vector 
-        residual = hp_tmp
-        for k in numpy.arange(0,len(known_bases)):
-            residual -= proj(known_bases[k],hp_tmp)
-        modula[i] = numpy.sqrt(numpy.vdot(residual, residual))
-    arg_newbasis = numpy.argmax(modula)    
+def least_match_waveform_unnormalized(parallel, nprocesses, paramspoints, known_bases, distance, deltaF, f_min, f_max, waveFlags, approximant):
+    if parallel == 1:
+        paramspointslist = paramspoints.tolist()
+        #pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(processes=nprocesses)
+        modula = [pool.apply(compute_modulus, args=(paramspoint, known_bases, distance, deltaF, f_min, f_max, approximant)) for paramspoint in paramspointslist]
+        pool.close()
+    if parallel == 0:
+        npts = len(paramspoints)
+        modula = numpy.zeros(npts)
+        for i in numpy.arange(0,npts):
+            paramspoint = paramspoints[i]
+            modula[i] = compute_modulus(paramspoint, known_bases, distance, deltaF, f_min, f_max, approximant)
+    arg_newbasis = numpy.argmax(modula) 
+    paramspoint = paramspoints[arg_newbasis]
     mass1, mass2 = get_m1m2_from_mcq(paramspoints[arg_newbasis][0],paramspoints[arg_newbasis][1])
     mass1 *= lal.lal.MSUN_SI
     mass2 *= lal.lal.MSUN_SI
@@ -127,39 +180,20 @@ def least_match_waveform_unnormalized(paramspoints, known_bases, npts, distance,
     return numpy.array([basis_new, paramspoints[arg_newbasis], modula[arg_newbasis]]) # elements, masses&spins, residual mod
 
 
-def least_match_quadratic_waveform_unnormalized(paramspoints, known_quad_bases, npts, distance, deltaF, f_min, f_max, waveFlags, approximant):
-    overlaps = numpy.zeros(npts)
-    modula = numpy.zeros(npts)
-    for i in numpy.arange(0,len(paramspoints)):
-        paramspoint = paramspoints[i]
-        m1, m2 = get_m1m2_from_mcq(paramspoint[0],paramspoint[1])
-        s1x, s1y, s1z = spherical_to_cartesian(paramspoint[2:5]) 
-        s2x, s2y, s2z = spherical_to_cartesian(paramspoint[5:8]) 
-        iota=paramspoint[8]  
-        phiRef=paramspoint[9]
-        ecc = 0
-        if len(paramspoint)==11:
-            ecc = paramspoint[10]
-        if len(paramspoint)==12:
-            lambda1 = paramspoint[10]
-            lambda2 = paramspoint[11]
-            lalsimulation.SimInspiralWaveformParamsInsertTidalLambda1(waveFlags, lambda1)
-            lalsimulation.SimInspiralWaveformParamsInsertTidalLambda2(waveFlags, lambda2) 
-        f_ref = 0 
-        RA=0    
-        DEC=0   
-        psi=0   
-        phi=0   
-        m1 *= lal.lal.MSUN_SI
-        m2 *= lal.lal.MSUN_SI
-        [plus,cross]=lalsimulation.SimInspiralChooseFDWaveform(m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, distance, iota, phiRef, 0, ecc, 0, deltaF, f_min, f_max, f_ref, waveFlags, approximant)
-        hp_tmp = plus.data.data[numpy.int(f_min/deltaF):numpy.int(f_max/deltaF)] # data_tmp is hplus and is a complex vector 
-        hp_quad_tmp = (numpy.absolute(hp_tmp))**2
-        residual = hp_quad_tmp
-        for k in numpy.arange(0,len(known_quad_bases)):
-            residual -= proj(known_quad_bases[k],hp_quad_tmp)
-        modula[i] = numpy.sqrt(numpy.vdot(residual, residual))
+def least_match_quadratic_waveform_unnormalized(parallel, nprocesses, paramspoints, known_quad_bases, distance, deltaF, f_min, f_max, waveFlags, approximant):
+    if parallel == 1:
+        paramspointslist = paramspoints.tolist()
+        pool = mp.Pool(processes=nprocesses)
+        modula = [pool.apply(compute_modulus_quad, args=(paramspoint, known_quad_bases, distance, deltaF, f_min, f_max, approximant)) for paramspoint in paramspointslist]
+        pool.close()
+    if parallel == 0:
+        npts = len(paramspoints)
+        modula = numpy.zeros(npts)
+        for i in numpy.arange(0,npts):
+            paramspoint = paramspoints[i]
+            modula[i] = compute_modulus_quad(paramspoint, known_quad_bases, distance, deltaF, f_min, f_max, approximant)
     arg_newbasis = numpy.argmax(modula)    
+    paramspoint = paramspoints[arg_newbasis]
     mass1, mass2 = get_m1m2_from_mcq(paramspoints[arg_newbasis][0],paramspoints[arg_newbasis][1])
     mass1 *= lal.lal.MSUN_SI
     mass2 *= lal.lal.MSUN_SI
@@ -182,27 +216,31 @@ def least_match_quadratic_waveform_unnormalized(paramspoints, known_quad_bases, 
     basis_quad_new = gram_schmidt(known_quad_bases, hp_quad_new)    
     return numpy.array([basis_quad_new, paramspoints[arg_newbasis], modula[arg_newbasis]]) # elements, masses&spins, residual mod
 
-def bases_searching_results_unnormalized(npts, nparams, nbases, known_bases, basis_waveforms, params, residual_modula, params_low, params_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
+def bases_searching_results_unnormalized(parallel, nprocesses, npts, nparams, nbases, known_bases, basis_waveforms, params, residual_modula, params_low, params_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
     if nparams == 10: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, and phiRef\n")
     if nparams == 11: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, phiRef, and eccentricity\n")
     if nparams == 12: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, phiRef, lambda1, and lambda2\n") 
     for k in numpy.arange(0,nbases-1):
-        params_points = generate_params_points(npts, nparams, params_low, params_high)
-        basis_new, params_new, rm_new= least_match_waveform_unnormalized(params_points, known_bases, npts, distance, deltaF, f_min, f_max, waveFlags, approximant)
-        print("Linear Iter: ", k, params_new)
+        paramspoints = generate_params_points(npts, nparams, params_low, params_high)
+        basis_new, params_new, rm_new = least_match_waveform_unnormalized(parallel, nprocesses, paramspoints, known_bases, distance, deltaF, f_min, f_max, waveFlags, approximant)
+        print("Linear Iter: ", k+1, "and new basis waveform", params_new)
         known_bases= numpy.append(known_bases, numpy.array([basis_new]), axis=0)
         params = numpy.append(params, numpy.array([params_new]), axis = 0)
         residual_modula = numpy.append(residual_modula, rm_new)
+    numpy.save('./linearbases.npy',known_bases)
+    numpy.save('./linearbasiswaveformparams.npy',params)
     return known_bases, params, residual_modula
 
-def bases_searching_quadratic_results_unnormalized(npts, nparams, nbases_quad, known_quad_bases, basis_waveforms, params_quad, residual_modula, params_low, params_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
+def bases_searching_quadratic_results_unnormalized(parallel, nprocesses, npts, nparams, nbases_quad, known_quad_bases, basis_waveforms, params_quad, residual_modula, params_low, params_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
     for k in numpy.arange(0,nbases_quad-1):
-        print("Quadratic Iter: ", k)
-        params_points = generate_params_points(npts, nparams, params_low, params_high)
-        basis_new, params_new, rm_new= least_match_quadratic_waveform_unnormalized(params_points, known_quad_bases, npts, distance, deltaF, f_min, f_max, waveFlags, approximant)
+        print("Quadratic Iter: ", k+1)
+        paramspoints = generate_params_points(npts, nparams, params_low, params_high)
+        basis_new, params_new, rm_new= least_match_quadratic_waveform_unnormalized(parallel, nprocesses, paramspoints, known_quad_bases, distance, deltaF, f_min, f_max, waveFlags, approximant)
         known_quad_bases= numpy.append(known_quad_bases, numpy.array([basis_new]), axis=0)
         params_quad = numpy.append(params_quad, numpy.array([params_new]), axis = 0)
         residual_modula = numpy.append(residual_modula, rm_new)
+    numpy.save('./quadraticbases.npy',known_quad_bases)
+    numpy.save('./quadraticbasiswaveformparams.npy',params_quad)
     return known_quad_bases, params_quad, residual_modula
 
 def massrange(mc_low, mc_high, q_low, q_high):
@@ -259,18 +297,19 @@ def initial_basis(mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s
     try:    
         if approximant==lalsimulation.IMRPhenomPv2_NRTidal:
             nparams = 12
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], lambda1_low, lambda2_low, iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], lambda1_high, lambda2_high, iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], lambda1_low, lambda2_low, 0.33333*np.pi, 1.5*np.pi]])
+            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low, lambda1_low, lambda2_low]
+            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high, lambda1_high, lambda2_high]
+            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi, lambda1_low, lambda2_low]])
+
             hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, lambda1_low, lambda2_low, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant) 
     except AttributeError: 
         pass
     try:
         if approximant==lalsimulation.IMRPhenomNSBH:
             nparams = 12
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], lambda1_low, lambda2_low, iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], lambda1_high, lambda2_high, iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], lambda1_low, lambda2_low, 0.33333*np.pi, 1.5*np.pi]])
+            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low, lambda1_low, lambda2_low]
+            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high, lambda1_high, lambda2_high]
+            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi, lambda1_low, lambda2_low]])
             hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, lambda1_low, lambda2_low, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant) 
     except AttributeError: 
         pass
@@ -363,9 +402,11 @@ def testrep(b_linear, emp_nodes, test_mc, test_q, test_s1, test_s2, test_ecc, te
     hp_rep = numpy.dot(b_linear,hp_test_emp)
     diff = hp_rep - hp_test
     rep_error = diff/numpy.sqrt(numpy.vdot(hp_test,hp_test))
-    plt.plot(numpy.real(rep_error), label='Real part of h+') 
-    plt.plot(numpy.imag(rep_error), label='Imaginary part of h+')
-    plt.xlabel('Waveform Node Number')
+    freq = numpy.arange(f_min,f_max,deltaF)
+    plt.figure(figsize=(15,9))
+    plt.plot(freq, numpy.real(rep_error), label='Real part of h+') 
+    plt.plot(freq, numpy.imag(rep_error), label='Imaginary part of h+')
+    plt.xlabel('Frequency')
     plt.ylabel('Fractional Representation Error')
     plt.title('Rep Error with numpy.linalg.pinv()')
     plt.legend(loc=0)
@@ -459,8 +500,10 @@ def testrep_quad(b_quad, emp_nodes_quad, test_mc_quad, test_q_quad, test_s1_quad
     hp_rep_quad = numpy.dot(b_quad,hp_test_quad_emp)
     diff_quad = hp_rep_quad - hp_test_quad
     rep_error_quad = diff_quad/numpy.vdot(hp_test_quad,hp_test_quad)**0.5
-    plt.plot(numpy.real(rep_error_quad))
-    plt.xlabel('Waveform Node Number')
+    freq = numpy.arange(f_min,f_max,deltaF)
+    plt.figure(figsize=(15,9))
+    plt.plot(freq, numpy.real(rep_error_quad))
+    plt.xlabel('Frequency')
     plt.ylabel('Fractional Representation Error for Quadratic')
     plt.title('Rep Error with numpy.linalg.pinv()')
     plt.show()
