@@ -11,6 +11,8 @@ import h5py
 import warnings
 import random
 import multiprocessing as mp
+from functools import partial
+from datetime import datetime 
 
 def howmany_within_range(row, minimum, maximum):
     """Returns how many numbers lie within `maximum` and `minimum` in a given `row`"""
@@ -146,11 +148,9 @@ def compute_modulus_quad(paramspoint, known_quad_bases, distance, deltaF, f_min,
 def least_match_waveform_unnormalized(parallel, nprocesses, paramspoints, known_bases, distance, deltaF, f_min, f_max, waveFlags, approximant):
     if parallel == 1:
         paramspointslist = paramspoints.tolist()
-        #pool = mp.Pool(mp.cpu_count())
-        pool = mp.Pool(processes=nprocesses)
-        modula = [pool.apply(compute_modulus, args=(paramspoint, known_bases, distance, deltaF, f_min, f_max, approximant)) for paramspoint in paramspointslist]
-        pool.close()
-    if parallel == 0:
+        with mp.Pool(processes=nprocesses) as pool:
+            modula = pool.map(partial(compute_modulus, known_bases=known_bases, distance=distance, deltaF=deltaF, f_min=f_min, f_max=f_max, approximant=approximant), paramspointslist)
+    else:
         npts = len(paramspoints)
         modula = numpy.zeros(npts)
         for i in numpy.arange(0,npts):
@@ -183,9 +183,8 @@ def least_match_waveform_unnormalized(parallel, nprocesses, paramspoints, known_
 def least_match_quadratic_waveform_unnormalized(parallel, nprocesses, paramspoints, known_quad_bases, distance, deltaF, f_min, f_max, waveFlags, approximant):
     if parallel == 1:
         paramspointslist = paramspoints.tolist()
-        pool = mp.Pool(processes=nprocesses)
-        modula = [pool.apply(compute_modulus_quad, args=(paramspoint, known_quad_bases, distance, deltaF, f_min, f_max, approximant)) for paramspoint in paramspointslist]
-        pool.close()
+        with mp.Pool(processes=nprocesses) as pool:
+            modula = pool.map(partial(compute_modulus_quad, known_quad_bases=known_quad_bases, distance=distance, deltaF=deltaF, f_min=f_min, f_max=f_max, approximant=approximant), paramspointslist)
     if parallel == 0:
         npts = len(paramspoints)
         modula = numpy.zeros(npts)
@@ -220,25 +219,41 @@ def bases_searching_results_unnormalized(parallel, nprocesses, npts, nparams, nb
     if nparams == 10: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, and phiRef\n")
     if nparams == 11: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, phiRef, and eccentricity\n")
     if nparams == 12: print("The parameters are Mc, q, s1(mag, theta, phi), s2(mag, theta, phi), iota, phiRef, lambda1, and lambda2\n") 
+        
+    t_start = datetime.now()
+    print(str(t_start), "Start linear bases searching...")
     for k in numpy.arange(0,nbases-1):
         paramspoints = generate_params_points(npts, nparams, params_low, params_high)
         basis_new, params_new, rm_new = least_match_waveform_unnormalized(parallel, nprocesses, paramspoints, known_bases, distance, deltaF, f_min, f_max, waveFlags, approximant)
-        print("Linear Iter: ", k+1, "and new basis waveform", params_new)
+        print(str(datetime.now()), "Linear Iter:", k+1, "and new basis waveform", params_new)
         known_bases= numpy.append(known_bases, numpy.array([basis_new]), axis=0)
         params = numpy.append(params, numpy.array([params_new]), axis = 0)
         residual_modula = numpy.append(residual_modula, rm_new)
+        
+    t_end = datetime.now()
+    print(str(t_start), "Finish linear bases searching...")
+    print(f"It takes {(t_end - t_start).total_seconds()} seconds.")
+    
     numpy.save('./linearbases.npy',known_bases)
     numpy.save('./linearbasiswaveformparams.npy',params)
     return known_bases, params, residual_modula
 
 def bases_searching_quadratic_results_unnormalized(parallel, nprocesses, npts, nparams, nbases_quad, known_quad_bases, basis_waveforms, params_quad, residual_modula, params_low, params_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
+    
+    t_start = datetime.now()
+    print(str(t_start), "Start quadratic bases searching...")
     for k in numpy.arange(0,nbases_quad-1):
-        print("Quadratic Iter: ", k+1)
+        print(str(datetime.now()), "Quadratic Iter: ", k+1)
         paramspoints = generate_params_points(npts, nparams, params_low, params_high)
         basis_new, params_new, rm_new= least_match_quadratic_waveform_unnormalized(parallel, nprocesses, paramspoints, known_quad_bases, distance, deltaF, f_min, f_max, waveFlags, approximant)
         known_quad_bases= numpy.append(known_quad_bases, numpy.array([basis_new]), axis=0)
         params_quad = numpy.append(params_quad, numpy.array([params_new]), axis = 0)
         residual_modula = numpy.append(residual_modula, rm_new)
+        
+    t_end = datetime.now()
+    print(str(t_start), "Finish quadratic bases searching...")
+    print(f"It takes {(t_end - t_start).total_seconds()} seconds.")
+    
     numpy.save('./quadraticbases.npy',known_quad_bases)
     numpy.save('./quadraticbasiswaveformparams.npy',params_quad)
     return known_quad_bases, params_quad, residual_modula
