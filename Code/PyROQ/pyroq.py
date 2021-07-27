@@ -255,6 +255,13 @@ def _generate_test_waveform(eccentricity, lambda1, lambda2, approximant):
         1, 20, 25, lal.CreateDict(), approximant
     )
 
+def _check_test_waveform(eccentricity, lambda1, lambda2, approximant):
+    try:
+        _ = _generate_test_waveform(eccentricity, lambda1, lambda2, approximant)
+        return True
+    except RuntimeError:
+        return False
+
 def _check_if_waveform_is_tidal(approximant):
     """Check to see if the approximant allows for tidal corrections. This is
     done by building a test waveform with lambda_1 = 0, lambda_2 = 1000. By only
@@ -266,12 +273,7 @@ def _check_if_waveform_is_tidal(approximant):
     approximant: int
         lalsimulation approximant number
     """
-    try:
-        _ = _generate_test_waveform(0, 0, 1000, approximant)
-        return True
-    except RuntimeError:
-        return False
-
+    return _check_test_waveform(0, 0, 1000, approximant)
 
 def _check_if_waveform_is_eccentric(approximant):
     """Check to see if the approximant allows for eccentricity. This is done
@@ -283,12 +285,10 @@ def _check_if_waveform_is_eccentric(approximant):
     approximant: int
         lalsimulation approximant number 
     """
-    try:
-        _ = _generate_test_waveform(-1, 0, 0, approximant)
+    check = _check_test_waveform(-1, 0, 0, approximant)
+    if check:
         return False
-    except RuntimeError:
-        return True
- 
+    return True
 
 def initial_basis(
     mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low,
