@@ -248,71 +248,88 @@ def massrange(mc_low, mc_high, q_low, q_high):
     mmax = get_m1m2_from_mcq(mc_high,q_high)[0]
     return [mmin, mmax]
 
-def initial_basis(mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low, s2sphere_high, ecc_low, ecc_high, lambda1_low, lambda1_high, lambda2_low, lambda2_high, iota_low, iota_high, phiref_low, phiref_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
-    try:
-        if approximant==lalsimulation.IMRPhenomPv2:
-            nparams = 10
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, 0, 0, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant)
-    except AttributeError: 
-        pass
-    try:
-        if approximant==lalsimulation.IMRPhenomPv3:
-            nparams = 10
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, 0, 0, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant)
-    except AttributeError: 
-        pass
-    try:
-        if approximant==lalsimulation.IMRPhenomPv3HM:
-            nparams = 10
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, 0, 0, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant)
-    except AttributeError: 
-        pass
-    try:
-        if approximant==lalsimulation.IMRPhenomXHM:
-            nparams = 10
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, 0, 0, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant)
-    except AttributeError: 
-        pass
-    try:
-        if approximant==lalsimulation.TaylorF2Ecc:
-            nparams = 11
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low, ecc_low] 
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high, ecc_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi, ecc_low]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), ecc_low, 0, 0, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant)
-    except AttributeError: 
-        pass
-    try:    
-        if approximant==lalsimulation.IMRPhenomPv2_NRTidal:
-            nparams = 12
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low, lambda1_low, lambda2_low]
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high, lambda1_high, lambda2_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi, lambda1_low, lambda2_low]])
 
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, lambda1_low, lambda2_low, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant) 
-    except AttributeError: 
-        pass
+def _generate_test_waveform(eccentricity, lambda1, lambda2, approximant):
+    return generate_a_waveform(
+        1, 1, [0, 0, 0], [0, 0, 0], eccentricity, lambda1, lambda2, 1, 1, 1,
+        1, 20, 25, lal.CreateDict(), approximant
+    )
+
+def _check_if_waveform_is_tidal(approximant):
+    """Check to see if the approximant allows for tidal corrections. This is
+    done by building a test waveform with lambda_1 = 0, lambda_2 = 1000. By only
+    passing a non-zero lambda_2, this condition will capture both NSBH and BNS
+    waveform approximants
+
+    Parameters
+    ----------
+    approximant: int
+        lalsimulation approximant number
+    """
     try:
-        if approximant==lalsimulation.IMRPhenomNSBH:
-            nparams = 12
-            params_low = [mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low, lambda1_low, lambda2_low]
-            params_high = [mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2], s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high, phiref_high, lambda1_high, lambda2_high]
-            params_start = numpy.array([[mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2], s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi, 1.5*np.pi, lambda1_low, lambda2_low]])
-            hp1 = generate_a_waveform_from_mcq(mc_low, q_low, spherical_to_cartesian(s1sphere_low), spherical_to_cartesian(s2sphere_low), 0, lambda1_low, lambda2_low, iota_low, phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant) 
-    except AttributeError: 
-        pass
+        _ = _generate_test_waveform(0, 0, 1000, approximant)
+        return True
+    except RuntimeError:
+        return False
+
+
+def _check_if_waveform_is_eccentric(approximant):
+    """Check to see if the approximant allows for eccentricity. This is done
+    by building a test waveform with eccentricity = -1. By passing
+    eccentricity = -1, we expect all eccentric waveform approximants to fail
+
+    Parameters
+    ----------
+    approximant: int
+        lalsimulation approximant number 
+    """
+    try:
+        _ = _generate_test_waveform(-1, 0, 0, approximant)
+        return False
+    except RuntimeError:
+        return True
+ 
+
+def initial_basis(mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low, s2sphere_high, ecc_low, ecc_high, lambda1_low, lambda1_high, lambda2_low, lambda2_high, iota_low, iota_high, phiref_low, phiref_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
+    nparams = 10
+    params_low = [
+        mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2],
+        s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], iota_low, phiref_low
+    ]
+    params_high = [
+        mc_high, q_high, s1sphere_high[0], s1sphere_high[1], s1sphere_high[2],
+        s2sphere_high[0], s2sphere_high[1], s2sphere_high[2], iota_high,
+        phiref_high
+    ]
+    params_start = [
+        [
+            mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2],
+            s2sphere_low[0], s2sphere_low[1], s2sphere_low[2], 0.33333*np.pi,
+            1.5*np.pi
+        ]
+    ]
+    waveform_args = lambda ecc, lambda1, lambda2: [
+        mc_low, q_low, spherical_to_cartesian(s1sphere_low),
+        spherical_to_cartesian(s2sphere_low), ecc, lambda1, lambda2, iota_low,
+        phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant
+    ]
+
+    if _check_if_waveform_is_tidal(approximant):
+        nparams += 2
+        params_low += [lambda1_low, lambda2_low]
+        params_high += [lambda1_high, lambda2_high]
+        params_start += [lambda1_low, lambda2_low]
+        hp1 = generate_a_waveform_from_mcq(
+            *waveform_args(0, lambda1_low, lambda2_low)
+        )
+    elif _check_if_waveform_is_eccentric(approximant):
+        nparams += 1
+        params_low += [ecc_low]
+        params_high += [ecc_high]
+        params_start += [ecc_low]
+        hp1 = generate_a_waveform_from_mcq(*waveform_args(ecc_low, 0, 0))
+    else:
+        hp1 = generate_a_waveform_from_mcq(*waveform_args(0, 0, 0))
     return numpy.array([nparams, params_low, params_high, params_start, hp1])
 
 def empnodes(ndim, known_bases): # Here known_bases is the full copy known_bases_copy. Its length is equal to or longer than ndim.
