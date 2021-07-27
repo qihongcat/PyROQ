@@ -290,7 +290,12 @@ def _check_if_waveform_is_eccentric(approximant):
         return True
  
 
-def initial_basis(mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low, s2sphere_high, ecc_low, ecc_high, lambda1_low, lambda1_high, lambda2_low, lambda2_high, iota_low, iota_high, phiref_low, phiref_high, distance, deltaF, f_min, f_max, waveFlags, approximant):
+def initial_basis(
+    mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low,
+    s2sphere_high, ecc_low, ecc_high, lambda1_low, lambda1_high, lambda2_low,
+    lambda2_high, iota_low, iota_high, phiref_low, phiref_high, distance,
+    deltaF, f_min, f_max, waveFlags, approximant
+):
     nparams = 10
     params_low = [
         mc_low, q_low, s1sphere_low[0], s1sphere_low[1], s1sphere_low[2],
