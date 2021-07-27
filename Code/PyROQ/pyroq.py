@@ -313,9 +313,9 @@ def initial_basis(
             1.5*np.pi
         ]
     ]
-    waveform_args = lambda ecc, lambda1, lambda2: [
+    waveform_args = lambda _ecc, _lambda1, _lambda2: [
         mc_low, q_low, spherical_to_cartesian(s1sphere_low),
-        spherical_to_cartesian(s2sphere_low), ecc, lambda1, lambda2, iota_low,
+        spherical_to_cartesian(s2sphere_low), _ecc, _lambda1, _lambda2, iota_low,
         phiref_low, distance, deltaF, f_min, f_max, waveFlags, approximant
     ]
 
