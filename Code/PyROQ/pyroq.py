@@ -285,10 +285,7 @@ def _check_if_waveform_is_eccentric(approximant):
     approximant: int
         lalsimulation approximant number 
     """
-    check = _check_test_waveform(-1, 0, 0, approximant)
-    if check:
-        return False
-    return True
+    return not _check_test_waveform(-1, 0, 0, approximant)
 
 def initial_basis(
     mc_low, mc_high, q_low, q_high, s1sphere_low, s1sphere_high, s2sphere_low,
