@@ -1,0 +1,63 @@
+# -----------------------
+#
+# Run a full build-and-test from the git repo
+# using a combination of conda and pip to install
+# all optional dependencies.
+#
+# This is the 'full' test suite.
+#
+# -----------------------
+
+name: Build and test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-and-test:
+    name: Python ${{ matrix.python-version }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - 3.7
+          - 3.8
+          - 3.9
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get source code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '${{ matrix.python-version }}'
+
+    - name: Install the software
+      run: python -m pip install Code/
+
+    - name: Package list
+      run: python -m pip list installed
+
+    - name: Run test suite
+      run: python -m pytest -ra --color yes --cov PyROQ --pyargs PyROQ --cov-report=xml --junitxml=pytest.xml
+
+    - name: Coverage report
+      run: python -m coverage report --show-missing
+
+    - name: Publish coverage to Codecov
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        files: coverage.xml
+        flags: ${{ runner.os }},python${{ matrix.python-version }}
