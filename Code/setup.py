@@ -18,5 +18,15 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    setup_requires=[
+        "setuptools",
+    ],
+    install_requires=[
+        "h5py",
+        "lalsuite",
+        "matplotlib",
+        "numpy",
+        "scipy",
+    ],
 )
 
